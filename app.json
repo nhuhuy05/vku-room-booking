@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "VKU Đặt Phòng",
+    "slug": "vku-room-booking",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "vku-room-booking",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050D1A"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "vn.vku.roombook"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundColor": "#050D1A"
+      },
+      "package": "vn.vku.roombook"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro",
+      "shortName": "VKU Room",
+      "name": "VKU Đặt Phòng Học & Lab",
+      "description": "Ứng dụng đặt phòng học và phòng lab VKU",
+      "display": "standalone",
+      "backgroundColor": "#050D1A",
+      "themeColor": "#0284C7"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#0284C7"
+        }
+      ],
+      "expo-font"
+    ]
+  }
+}
