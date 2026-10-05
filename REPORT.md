@@ -12,8 +12,8 @@
 * **Team Members:**
   1. Nguyễn Như Huy — Student ID: 23IT.B077 — Role: Fullstack Developer — Contribution: 100%
 
-* **🔗 Live Demo URL:** 
-* **💻 GitHub Repository:** 
+* **🔗 Live Demo URL:** [https://vku-room-booking-alpha.vercel.app](https://vku-room-booking-alpha.vercel.app)
+* **💻 GitHub Repository:** [https://github.com/nhuhuy05/vku-room-booking](https://github.com/nhuhuy05/vku-room-booking)
 ---
 
 ## 2. FEATURE IMPLEMENTATION CHECKLIST
@@ -21,8 +21,13 @@
 | # | Required Feature | Status | Implementation Details & Acceptance Level |
 |:---:|---|:---:|---|
 | 1 | **Responsive Mobile Viewport** | ✅ Complete | 100% responsive đa nền tảng. Giao diện tự động switch: **Light Theme** (trắng) cho Web Browser, **Dark Theme** (tối) cho iOS/Android native. Hệ màu được quản lý qua `constants/Colors.ts` với điều kiện `Platform.OS === 'web'`. |
-| 2 | **Local Offline Persistence** | ✅ Complete | Sử dụng **Zustand** kết hợp **AsyncStorage** để lưu trữ Authentication Token, Booking History cục bộ trên thiết bị. Mọi thao tác đặt phòng được ghi vào `@vku_bookings` key ngay lập tức, đảm bảo data không mất khi tắt app. Trường `synced: boolean` đánh dấu trạng thái đồng bộ từng booking. |
-| 3 | **Automatic Background Sync** | ✅ Complete | Hook `useNetworkMonitor` theo dõi kết nối real-time (Web: `window online/offline events`; Native: `expo-network` + `AppState`). Khi mất mạng, các booking được giữ trong hàng chờ `pendingSync[]`. Khi kết nối được khôi phục, `syncPending()` tự động được gọi — **NetworkBanner** hiển thị trạng thái đồng bộ (Offline → Đang đồng bộ → Thành công). |
+| 2 | **Local Offline Persistence** | ✅ Complete | Sử dụng **Zustand** (`useBookingStore`) kết hợp **AsyncStorage** (`@vku_bookings_data` & `@vku_booking_user_session`) để lưu trữ phiên đăng nhập, danh sách và thao tác hủy phòng bền vững. Dữ liệu được bảo toàn nguyên vẹn sau khi reload ứng dụng. |
+| 3 | **Automatic Background Sync** | ✅ Complete | Hook `useNetworkMonitor` theo dõi kết nối real-time. Khi mất mạng, các booking được giữ trong hàng chờ `pendingSync[]`. Khi có mạng trở lại, `syncPending()` tự động kích hoạt đồng bộ. |
+| 4 | **Bộ lọc đa tham số & Instant Search** | ✅ Complete | Tìm kiếm tức thì và bộ lọc chip 3 chiều: **Tòa nhà** (A, B, C, V), **Sức chứa** (2–5, 6–10, 11–20, >20 sinh viên) và **Trang thiết bị** (Máy chiếu, Bảng trắng, PC cấu hình cao, Điều hòa). |
+| 5 | **Trình chọn 7 ngày & Khung giờ 2h** | ✅ Complete | Trình chọn ngày 7 ngày và ca học 2 tiếng rời rạc (07:30–09:30, 09:30–11:30, 13:00–15:00, 15:00–17:00). Ngăn chặn xung đột trực quan theo thời gian thực (vô hiệu hóa các slot đã đặt). |
+| 6 | **Vé đặt phòng (Booking Pass) & QR Check-in** | ✅ Complete | Thẻ vé phong cách Boarding Pass với mã vé duy nhất (`passCode`). Modal mã QR check-in tương tác có tính năng mô phỏng quét check-in tại phòng. |
+| 7 | **Thông báo cục bộ trước 15 phút** | ✅ Complete | Tích hợp `expo-notifications` kích hoạt cảnh báo check-in trước đúng 15 phút kèm lời nhắc chuẩn bị vé mã QR. |
+| 8 | **Tối ưu danh sách FlatList 60fps** | ✅ Complete | Tách các component thẻ ghi nhớ độc lập (`RoomCard.tsx`, `BookingPassCard.tsx` có `React.memo`), cấu hình đầy đủ các props hiệu năng cuộn `initialNumToRender`, `maxToRenderPerBatch`, `windowSize`, `removeClippedSubviews`. |
 
 ---
 
@@ -37,6 +42,7 @@
 | State | Zustand v5 | Global state management |
 | Persistence | AsyncStorage | Offline local storage |
 | Network | expo-network + Browser Events | Network status detection |
+| Notification | expo-notifications | Local reminder 15 mins before booking |
 | Deployment | Vercel | PWA hosting |
 
 ### 3.2 Cấu trúc thư mục
@@ -47,29 +53,34 @@ vku-room-booking/
 │   ├── _layout.tsx          # Root layout: Network monitor, StatusBar, Safe Area
 │   ├── (auth)/              # Authentication flow (Login screen)
 │   ├── (tabs)/              # Bottom Tab Navigation
-│   │   ├── index.tsx        # Trang chủ — Danh sách phòng + Bộ lọc
-│   │   ├── search.tsx       # Tìm kiếm phòng nâng cao
-│   │   ├── bookings.tsx     # Lịch sử đặt phòng
-│   │   └── profile.tsx      # Hồ sơ + PWA Install Guide
-│   └── room/[id].tsx        # Chi tiết phòng + Form đặt phòng
+│   │   ├── index.tsx        # Trang chủ — Danh sách phòng + Bộ lọc nhanh (FlatList 60fps)
+│   │   ├── search.tsx       # Tìm kiếm phòng nâng cao (Bộ lọc A, B, C, V, 2-20 chỗ, Thiết bị)
+│   │   ├── bookings.tsx     # Quản lý vé đặt phòng (Booking Pass)
+│   │   └── profile.tsx      # Hồ sơ sinh viên + PWA Install Guide
+│   └── room/[id].tsx        # Chi tiết phòng + Chọn ngày (7 ngày) + Khung 2h chống xung đột
 │
 ├── components/
+│   ├── RoomCard.tsx         # Memoized Room Card (ảnh, tòa/tầng, sức chứa, trạng thái)
+│   ├── BookingPassCard.tsx  # Memoized Booking Pass (mã vé duy nhất, QR trigger)
+│   ├── CheckInQRModal.tsx   # Modal mã QR check-in tương tác (mô phỏng quét check-in)
 │   ├── NetworkBanner.tsx    # Banner Offline/Syncing/Synced
 │   └── SafariInstallBanner.tsx  # PWA install guide cho iOS Safari
 │
 ├── hooks/
-│   └── useNetworkMonitor.ts # Hook theo dõi mạng đa nền tảng
+│   ├── useNetworkMonitor.ts # Hook theo dõi mạng đa nền tảng
+│   └── useNotifications.ts  # Cấu hình expo-notifications nhắc trước 15 phút
 │
 ├── store/
 │   ├── authStore.ts         # Auth state (login/logout/persist)
-│   ├── bookingStore.ts      # Booking CRUD + pendingSync queue
+│   ├── bookingStore.ts      # useBookingStore: Booking CRUD + User Session + AsyncStorage
 │   └── roomStore.ts         # Room data state
 │
 ├── constants/
 │   ├── Colors.ts            # Design tokens (Light/Dark theme)
-│   └── mockData.ts          # Mock data phòng và lịch đặt
+│   ├── mockData.ts          # Mock data phòng (Tòa A,B,C,V, sức chứa 2-20), ca 2 tiếng
+│   └── roomImages.ts        # Map hình ảnh phòng học
 │
-└── types/index.ts           # TypeScript interfaces
+└── types/index.ts           # TypeScript interfaces (Room, Booking có passCode, TimeSlot)
 ```
 
 ### 3.3 Luồng Background Sync

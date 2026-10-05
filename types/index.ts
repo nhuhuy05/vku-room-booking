@@ -33,6 +33,7 @@ export interface Booking {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   createdAt: string;
   synced: boolean;
+  passCode?: string;
 }
 
 export interface TimeSlot {

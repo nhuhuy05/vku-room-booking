@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, TouchableOpacity,
-  ScrollView, Alert, Modal, SafeAreaView,
+  ScrollView, Alert, Modal, Platform,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -23,7 +23,7 @@ function InstallStep({ num, icon, text }: { num: string; icon: string; text: str
 function InstallGuideModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
-      <SafeAreaView style={guide.root}>
+      <View style={guide.root}>
         <View style={guide.header}>
           <Text style={guide.title}>📲 Cài đặt ứng dụng</Text>
           <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, right: 10, bottom: 10, left: 10 }}>
@@ -76,7 +76,7 @@ function InstallGuideModal({ visible, onClose }: { visible: boolean; onClose: ()
             <Text style={guide.linkText}>vku-room-booking.vercel.app</Text>
           </View>
         </ScrollView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -171,13 +171,26 @@ export default function ProfileScreen() {
     .map((w) => w[0]).join('').toUpperCase() ?? '?';
 
   const handleLogout = () => {
-    Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất?', [
-      { text: 'Hủy', style: 'cancel' },
-      {
-        text: 'Đăng xuất', style: 'destructive',
-        onPress: async () => { await logout(); router.replace('/(auth)/login'); },
-      },
-    ]);
+    const doLogout = async () => {
+      await logout();
+      await useBookingStore.getState().setCurrentUser(null);
+      router.replace('/(auth)/login');
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Bạn có chắc muốn đăng xuất khỏi hệ thống VKU Room?');
+      if (confirmed) {
+        doLogout();
+      }
+    } else {
+      Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất?', [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Đăng xuất', style: 'destructive',
+          onPress: doLogout,
+        },
+      ]);
+    }
   };
 
   return (

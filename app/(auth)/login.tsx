@@ -1,13 +1,40 @@
 import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ActivityIndicator,
-  Alert, ScrollView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../store/authStore';
+import { useBookingStore } from '../../store/bookingStore';
 import { Colors, Spacing, Radius, Typography } from '../../constants/Colors';
+
+const DEMO_ACCOUNTS = [
+  {
+    mssv: '21IT001',
+    password: '123456',
+    name: 'Nguyễn Văn An',
+    class: 'CNTT21A',
+    role: 'Tài khoản 1',
+    avatarColor: Colors.primary,
+  },
+  {
+    mssv: '21IT002',
+    password: '123456',
+    name: 'Trần Thị B',
+    class: 'CNTT21B',
+    role: 'Tài khoản 2',
+    avatarColor: Colors.secondary,
+  },
+];
 
 export default function LoginScreen() {
   const [mssv, setMssv] = useState('');
@@ -15,7 +42,9 @@ export default function LoginScreen() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [focusedField, setFocusedField] = useState<'mssv' | 'pw' | null>(null);
+
   const { login } = useAuthStore();
+  const { setCurrentUser } = useBookingStore();
 
   const handleLogin = async () => {
     if (!mssv.trim() || !password.trim()) {
@@ -26,13 +55,23 @@ export default function LoginScreen() {
     const ok = await login(mssv.trim(), password);
     setLoading(false);
     if (ok) {
+      const loggedUser = useAuthStore.getState().user;
+      if (loggedUser) {
+        await setCurrentUser(loggedUser);
+      }
       router.replace('/(tabs)');
     } else {
-      Alert.alert('Đăng nhập thất bại', 'MSSV hoặc mật khẩu không đúng.\n\nDemo: 21IT001 / 123456');
+      Alert.alert(
+        'Đăng nhập thất bại',
+        'MSSV hoặc mật khẩu không đúng.\n\nChọn 1 trong 2 tài khoản demo bên dưới để đăng nhập nhanh!'
+      );
     }
   };
 
-  const autofill = () => { setMssv('21IT001'); setPassword('123456'); };
+  const handleSelectDemo = (acc: (typeof DEMO_ACCOUNTS)[0]) => {
+    setMssv(acc.mssv);
+    setPassword(acc.password);
+  };
 
   return (
     <KeyboardAvoidingView
@@ -51,7 +90,6 @@ export default function LoginScreen() {
 
         {/* ── Logo section ── */}
         <View style={styles.logoSection}>
-          {/* Outer glow ring */}
           <View style={styles.logoGlowRing}>
             <View style={styles.logoRing}>
               <View style={styles.logoInner}>
@@ -63,7 +101,6 @@ export default function LoginScreen() {
           <Text style={styles.appName}>VKU Room</Text>
           <Text style={styles.tagline}>Hệ thống đặt phòng học thông minh</Text>
 
-          {/* VKU badge */}
           <View style={styles.institutionBadge}>
             <View style={styles.badgeDot} />
             <Text style={styles.badgeText}>Đại học Công nghệ Việt – Hàn</Text>
@@ -72,7 +109,6 @@ export default function LoginScreen() {
 
         {/* ── Login card ── */}
         <View style={styles.card}>
-          {/* Card top accent line */}
           <View style={styles.cardTopBar} />
 
           <Text style={styles.cardTitle}>Đăng nhập</Text>
@@ -81,23 +117,28 @@ export default function LoginScreen() {
           {/* MSSV */}
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Mã số sinh viên</Text>
-            <View style={[
-              styles.inputWrap,
-              focusedField === 'mssv' && styles.inputFocused,
-            ]}>
-              <View style={[
-                styles.inputIconBox,
-                focusedField === 'mssv' && styles.inputIconBoxFocused,
-              ]}>
+            <View
+              style={[
+                styles.inputWrap,
+                focusedField === 'mssv' && styles.inputFocused,
+              ]}
+            >
+              <View
+                style={[
+                  styles.inputIconBox,
+                  focusedField === 'mssv' && styles.inputIconBoxFocused,
+                ]}
+              >
                 <Ionicons
-                  name="person-outline" size={17}
+                  name="person-outline"
+                  size={17}
                   color={focusedField === 'mssv' ? '#fff' : Colors.textMuted}
                 />
               </View>
               <TextInput
                 id="input-mssv"
                 style={styles.input}
-                placeholder="VD: 21IT001"
+                placeholder="VD: 21IT001 hoặc 21IT002"
                 placeholderTextColor={Colors.textMuted}
                 value={mssv}
                 onChangeText={setMssv}
@@ -112,16 +153,21 @@ export default function LoginScreen() {
           {/* Password */}
           <View style={styles.fieldGroup}>
             <Text style={styles.fieldLabel}>Mật khẩu</Text>
-            <View style={[
-              styles.inputWrap,
-              focusedField === 'pw' && styles.inputFocused,
-            ]}>
-              <View style={[
-                styles.inputIconBox,
-                focusedField === 'pw' && styles.inputIconBoxFocused,
-              ]}>
+            <View
+              style={[
+                styles.inputWrap,
+                focusedField === 'pw' && styles.inputFocused,
+              ]}
+            >
+              <View
+                style={[
+                  styles.inputIconBox,
+                  focusedField === 'pw' && styles.inputIconBoxFocused,
+                ]}
+              >
                 <Ionicons
-                  name="lock-closed-outline" size={17}
+                  name="lock-closed-outline"
+                  size={17}
                   color={focusedField === 'pw' ? '#fff' : Colors.textMuted}
                 />
               </View>
@@ -144,27 +190,77 @@ export default function LoginScreen() {
               >
                 <Ionicons
                   name={showPw ? 'eye-off-outline' : 'eye-outline'}
-                  size={17} color={Colors.textMuted}
+                  size={17}
+                  color={Colors.textMuted}
                 />
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Demo autofill hint */}
-          <TouchableOpacity
-            id="btn-autofill"
-            style={styles.demoBox}
-            onPress={autofill}
-            activeOpacity={0.7}
-          >
-            <View style={styles.demoIconBox}>
-              <Ionicons name="flash" size={13} color={Colors.accent} />
+          {/* ── 2 Demo Accounts Section ── */}
+          <View style={styles.demoSection}>
+            <View style={styles.demoSectionHeader}>
+              <Ionicons name="sparkles" size={14} color={Colors.accent} />
+              <Text style={styles.demoSectionTitle}>
+                Tài khoản Demo (Nhấn để điền nhanh)
+              </Text>
             </View>
-            <Text style={styles.demoText}>
-              Demo: <Text style={styles.demoBold}>21IT001</Text>{' / '}<Text style={styles.demoBold}>123456</Text>
-              {'  ·  '}Nhấn để điền tự động
-            </Text>
-          </TouchableOpacity>
+
+            <View style={styles.demoCardsRow}>
+              {DEMO_ACCOUNTS.map((acc) => {
+                const isSelected = mssv === acc.mssv;
+                return (
+                  <TouchableOpacity
+                    key={acc.mssv}
+                    id={`btn-demo-${acc.mssv}`}
+                    style={[
+                      styles.demoAccountCard,
+                      isSelected && styles.demoAccountCardActive,
+                    ]}
+                    onPress={() => handleSelectDemo(acc)}
+                    activeOpacity={0.78}
+                  >
+                    <View style={styles.demoCardTop}>
+                      <View
+                        style={[
+                          styles.demoAvatar,
+                          { backgroundColor: acc.avatarColor + '20' },
+                        ]}
+                      >
+                        <Ionicons
+                          name="person"
+                          size={13}
+                          color={acc.avatarColor}
+                        />
+                      </View>
+                      <View style={styles.demoRoleBadge}>
+                        <Text style={styles.demoRoleText}>{acc.role}</Text>
+                      </View>
+                      {isSelected && (
+                        <Ionicons
+                          name="checkmark-circle"
+                          size={16}
+                          color={Colors.primary}
+                          style={{ marginLeft: 'auto' }}
+                        />
+                      )}
+                    </View>
+
+                    <Text style={styles.demoName} numberOfLines={1}>
+                      {acc.name}
+                    </Text>
+                    <Text style={styles.demoMeta}>
+                      MSSV:{' '}
+                      <Text style={styles.demoHighlight}>{acc.mssv}</Text>
+                    </Text>
+                    <Text style={styles.demoSub}>
+                      {acc.class} · Pass: {acc.password}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
           {/* Login button */}
           <TouchableOpacity
@@ -192,7 +288,7 @@ export default function LoginScreen() {
             <View style={[styles.footerDot, { backgroundColor: Colors.secondary }]} />
             <View style={[styles.footerDot, { backgroundColor: Colors.accent }]} />
           </View>
-          <Text style={styles.footerText}>Khoa CNTT · VKU © 2025</Text>
+          <Text style={styles.footerText}>Khoa CNTT · VKU © 2026</Text>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -202,24 +298,38 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.bg },
   scroll: {
-    flexGrow: 1, justifyContent: 'center',
-    padding: Spacing.md, paddingVertical: Spacing.xl,
+    flexGrow: 1,
+    justifyContent: 'center',
+    padding: Spacing.md,
+    paddingVertical: Spacing.xl,
   },
 
   // ── Blobs ──
   blobTR: {
-    position: 'absolute', top: -100, right: -80,
-    width: 260, height: 260, borderRadius: 130,
+    position: 'absolute',
+    top: -100,
+    right: -80,
+    width: 260,
+    height: 260,
+    borderRadius: 130,
     backgroundColor: Colors.primaryGlow,
   },
   blobBL: {
-    position: 'absolute', bottom: -60, left: -60,
-    width: 200, height: 200, borderRadius: 100,
+    position: 'absolute',
+    bottom: -60,
+    left: -60,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
     backgroundColor: Colors.secondaryGlow,
   },
   blobCenter: {
-    position: 'absolute', top: '35%', left: '50%',
-    width: 140, height: 140, borderRadius: 70,
+    position: 'absolute',
+    top: '35%',
+    left: '50%',
+    width: 140,
+    height: 140,
+    borderRadius: 70,
     backgroundColor: Colors.accentGlow,
     transform: [{ translateX: -70 }],
   },
@@ -227,93 +337,127 @@ const styles = StyleSheet.create({
   // ── Logo ──
   logoSection: { alignItems: 'center', marginBottom: Spacing.xl },
   logoGlowRing: {
-    width: 116, height: 116, borderRadius: 58,
+    width: 116,
+    height: 116,
+    borderRadius: 58,
     backgroundColor: Colors.primaryGlow,
-    alignItems: 'center', justifyContent: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing.md,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 8,
   },
   logoRing: {
-    width: 100, height: 100, borderRadius: 50,
-    borderWidth: 1.5, borderColor: Colors.borderGlow,
-    backgroundColor: Colors.bgCard,
-    alignItems: 'center', justifyContent: 'center',
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   logoInner: {
-    width: 74, height: 74, borderRadius: 37,
-    backgroundColor: Colors.primaryGlow,
-    alignItems: 'center', justifyContent: 'center',
+    width: 76,
+    height: 76,
+    borderRadius: 38,
+    backgroundColor: Colors.bgCard,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: Colors.border,
   },
   appName: {
     ...Typography.h1,
-    color: Colors.textPrimary,
+    fontSize: 30,
     letterSpacing: -0.5,
+    color: Colors.textPrimary,
   },
   tagline: {
     ...Typography.bodyMd,
-    color: Colors.textSecondary,
-    marginTop: Spacing.xs,
-    textAlign: 'center',
+    color: Colors.textMuted,
+    marginTop: 4,
   },
   institutionBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 7,
-    backgroundColor: Colors.primaryGlow,
-    borderRadius: Radius.full, paddingHorizontal: 14, paddingVertical: 7,
-    marginTop: Spacing.sm,
-    borderWidth: 1, borderColor: Colors.borderGlow,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.bgCard,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: Radius.full,
+    marginTop: 10,
   },
   badgeDot: {
-    width: 6, height: 6, borderRadius: 3,
-    backgroundColor: Colors.primary,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.accent,
   },
-  badgeText: { ...Typography.label, color: Colors.primary },
+  badgeText: {
+    ...Typography.micro,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+  },
 
   // ── Card ──
   card: {
     backgroundColor: Colors.bgCard,
     borderRadius: Radius.xl,
     padding: Spacing.lg,
-    borderWidth: 1, borderColor: Colors.border,
-    marginBottom: Spacing.lg,
-    overflow: 'hidden',
-    shadowColor: Colors.primary,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
+    shadowOpacity: Colors.shadowOpacity * 1.5,
     shadowRadius: 24,
-    elevation: 8,
+    elevation: 10,
+    marginBottom: Spacing.xl,
+    overflow: 'hidden',
   },
   cardTopBar: {
-    position: 'absolute', top: 0, left: 0, right: 0,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
     height: 3,
-    // 3-color gradient bar (simulated with 3 divs isn't possible — use primary)
     backgroundColor: Colors.primary,
   },
-  cardTitle: {
-    ...Typography.h2,
-    color: Colors.textPrimary,
-    marginTop: 6, marginBottom: Spacing.xs,
-  },
+  cardTitle: { ...Typography.h2, color: Colors.textPrimary },
   cardSubtitle: {
     ...Typography.bodyMd,
-    color: Colors.textSecondary,
+    color: Colors.textMuted,
+    marginTop: 3,
     marginBottom: Spacing.lg,
   },
 
   // ── Fields ──
   fieldGroup: { marginBottom: Spacing.md },
   fieldLabel: {
-    ...Typography.label, color: Colors.textSecondary, marginBottom: 6,
+    ...Typography.label,
+    color: Colors.textSecondary,
+    marginBottom: 6,
   },
   inputWrap: {
-    flexDirection: 'row', alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.bgInput,
     borderRadius: Radius.md,
-    borderWidth: 1.5, borderColor: Colors.border, height: 52,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    height: 52,
     overflow: 'hidden',
   },
   inputFocused: { borderColor: Colors.primary },
   inputIconBox: {
-    width: 48, alignItems: 'center', justifyContent: 'center',
-    borderRightWidth: 1, borderRightColor: Colors.border,
+    width: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRightWidth: 1,
+    borderRightColor: Colors.border,
     height: '100%',
   },
   inputIconBoxFocused: {
@@ -321,36 +465,113 @@ const styles = StyleSheet.create({
     borderRightColor: Colors.primary,
   },
   input: {
-    flex: 1, height: 52, paddingHorizontal: 12,
-    color: Colors.textPrimary, ...Typography.body,
+    flex: 1,
+    height: 52,
+    paddingHorizontal: 12,
+    color: Colors.textPrimary,
+    ...Typography.body,
   },
   eyeBtn: {
-    width: 44, height: 52, alignItems: 'center', justifyContent: 'center',
+    width: 44,
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
-  // ── Demo hint ──
-  demoBox: {
-    flexDirection: 'row', alignItems: 'center', gap: 8,
-    backgroundColor: Colors.accentGlow,
-    borderRadius: Radius.sm, padding: 10, marginBottom: Spacing.md,
-    borderWidth: 1, borderColor: Colors.borderGoldGlow,
+  // ── 2 Demo Accounts Section ──
+  demoSection: {
+    marginTop: 4,
+    marginBottom: Spacing.lg,
   },
-  demoIconBox: {
-    width: 24, height: 24, borderRadius: 12,
-    backgroundColor: Colors.accent + '33',
-    alignItems: 'center', justifyContent: 'center',
+  demoSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 8,
   },
-  demoText: { ...Typography.caption, color: Colors.textSecondary, flex: 1 },
-  demoBold: { color: Colors.accent, fontWeight: '700' },
+  demoSectionTitle: {
+    ...Typography.micro,
+    color: Colors.accent,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
+  demoCardsRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  demoAccountCard: {
+    flex: 1,
+    backgroundColor: Colors.bgInput,
+    borderRadius: Radius.md,
+    padding: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  demoAccountCardActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primaryGlow,
+  },
+  demoCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  demoAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  demoRoleBadge: {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.sm,
+  },
+  demoRoleText: {
+    ...Typography.micro,
+    fontSize: 10,
+    color: Colors.textMuted,
+    fontWeight: '600',
+  },
+  demoName: {
+    ...Typography.label,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginBottom: 2,
+  },
+  demoMeta: {
+    ...Typography.micro,
+    color: Colors.textMuted,
+  },
+  demoHighlight: {
+    color: Colors.primary,
+    fontWeight: '700',
+  },
+  demoSub: {
+    ...Typography.micro,
+    fontSize: 10,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
 
   // ── Login button ──
   loginBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 10, backgroundColor: Colors.primary,
-    borderRadius: Radius.md, height: 54, marginTop: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: Colors.primary,
+    borderRadius: Radius.md,
+    height: 54,
     shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4, shadowRadius: 14, elevation: 7,
+    shadowOpacity: 0.4,
+    shadowRadius: 14,
+    elevation: 7,
   },
   loginBtnDisabled: { opacity: 0.6 },
   loginBtnText: { ...Typography.h4, color: '#fff' },

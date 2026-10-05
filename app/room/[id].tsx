@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Alert, Modal, TextInput, ActivityIndicator, Image,
+  Alert, Modal, TextInput, ActivityIndicator, Image, Platform,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +19,7 @@ import {
 function getDateList() {
   const dates: Date[] = [];
   const today = new Date();
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < 7; i++) {
     const d = new Date(today);
     d.setDate(today.getDate() + i);
     dates.push(d);
@@ -105,14 +105,15 @@ export default function RoomDetailScreen() {
 
       for (const slotId of selectedSlots) {
         const slot = TIME_SLOTS.find((s) => s.id === slotId)!;
+        const currentUserId = user?.id ?? 'u001';
         const booking = await createBooking({
-          userId: user!.id, roomId: room!.id, roomName: room!.name,
+          userId: currentUserId, roomId: room!.id, roomName: room!.name,
           date: selectedDate, startTime: slot.start, endTime: slot.end,
           purpose: purpose.trim(),
         });
         bookedSlotObjects.push({ start: slot.start, end: slot.end });
 
-        // ⏰ Schedule nhắc nhở 30 phút trước cho từng khung giờ
+        // ⏰ Schedule nhắc nhở check-in 15 phút trước cho từng khung giờ
         await scheduleBookingReminder({
           bookingId:  booking.id,
           roomName:   room!.name,
@@ -122,7 +123,7 @@ export default function RoomDetailScreen() {
         });
       }
 
-      // 🔔 Thông báo xác nhận tức thì (chỉ hiển thị slot đầu tiên nếu đặt nhiều)
+      // 🔔 Thông báo xác nhận tức thì
       await sendBookingConfirmation({
         roomName:  room!.name,
         date:      selectedDate,
@@ -131,11 +132,20 @@ export default function RoomDetailScreen() {
       });
 
       setModalVisible(false); setSelectedSlots([]); setPurpose('');
-      Alert.alert(
-        '✅ Đặt phòng thành công!',
-        `${room?.name}\n📅 ${selectedDate}\n⏰ ${selectedSlots.length} khung giờ\n🔔 Đã đặt nhắc nhở 30 phút trước`,
-        [{ text: 'Xem lịch', onPress: () => router.push('/(tabs)/bookings') }, { text: 'OK' }]
-      );
+      if (Platform.OS === 'web') {
+        const goBookings = window.confirm(
+          `✅ Đặt phòng thành công!\n\nPhòng: ${room?.name}\nNgày: ${selectedDate}\nSố ca: ${selectedSlots.length} ca học (đã đặt nhắc 15 phút trước)\n\nNhấn "OK" để xem vé đặt phòng ngay bây giờ.`
+        );
+        if (goBookings) {
+          router.push('/(tabs)/bookings');
+        }
+      } else {
+        Alert.alert(
+          '✅ Đặt phòng thành công!',
+          `${room?.name}\n📅 ${selectedDate}\n⏰ ${selectedSlots.length} khung giờ\n🔔 Đã đặt nhắc nhở check-in trước 15 phút`,
+          [{ text: 'Xem vé đặt phòng', onPress: () => router.push('/(tabs)/bookings') }, { text: 'OK' }]
+        );
+      }
     } catch {
       Alert.alert('Lỗi', 'Không thể đặt phòng. Vui lòng thử lại.');
     } finally {
@@ -308,10 +318,12 @@ export default function RoomDetailScreen() {
                   disabled={state === 'past' || state === 'booked'}
                   activeOpacity={0.75}
                 >
-                  <Text style={[styles.slotTime, { color: textColor }]}>{slot.start}</Text>
-                  {state === 'mine'   && <Ionicons name="person"       size={10} color={Colors.slotMineBorder} />}
-                  {state === 'booked' && <Ionicons name="lock-closed"  size={10} color={Colors.slotBookedBorder} />}
-                  {isSelected         && <Ionicons name="checkmark"    size={12} color="#fff" />}
+                  <Text style={[styles.slotTime, { color: textColor }]}>{slot.label}</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    {state === 'mine'   && <Ionicons name="person"       size={12} color={Colors.slotMineBorder} />}
+                    {state === 'booked' && <Ionicons name="lock-closed"  size={12} color={Colors.slotBookedBorder} />}
+                    {isSelected         && <Ionicons name="checkmark-circle" size={14} color="#fff" />}
+                  </View>
                 </TouchableOpacity>
               );
             })}
@@ -530,14 +542,14 @@ const styles = StyleSheet.create({
   legendDot: { width: 8, height: 8, borderRadius: 4 },
   legendText: { ...Typography.micro, color: Colors.textMuted },
 
-  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  slotsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   slotItem: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingHorizontal: 12, paddingVertical: 11,
-    borderRadius: Radius.md, borderWidth: 1.5, minWidth: '30%',
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 12, paddingVertical: 12,
+    borderRadius: Radius.md, borderWidth: 1.5, width: '48%',
   },
-  slotDisabled: { opacity: 0.5 },
-  slotTime: { ...Typography.label },
+  slotDisabled: { opacity: 0.45 },
+  slotTime: { ...Typography.label, fontSize: 13, fontWeight: '600' },
 
   // ── Book Bar ──
   bookBar: {
