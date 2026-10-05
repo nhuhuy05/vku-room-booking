@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   chipText: { ...Typography.label, color: Colors.textMuted },
   chipTextActive: { color: '#fff' },
 
-  listContent: { paddingHorizontal: Spacing.md },
+  listContent: { paddingHorizontal: Spacing.md, paddingBottom: 28 },
   emptyBox: {
     alignItems: 'center',
     justifyContent: 'center',

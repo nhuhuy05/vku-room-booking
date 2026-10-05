@@ -554,6 +554,9 @@ const styles = StyleSheet.create({
   // ── Book Bar ──
   bookBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
+    maxWidth: Platform.OS === 'web' ? 460 : undefined,
+    width: '100%',
+    alignSelf: 'center',
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     backgroundColor: Colors.bgCard, padding: Spacing.md, paddingBottom: 28,
     borderTopWidth: 1, borderTopColor: Colors.border,

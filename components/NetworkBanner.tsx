@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated } from 'react-native';
+import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 
@@ -93,6 +93,9 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     right: 0,
+    maxWidth: Platform.OS === 'web' ? 460 : undefined,
+    width: '100%',
+    alignSelf: 'center',
     height: 40,
     justifyContent: 'flex-end',
     paddingBottom: 6,

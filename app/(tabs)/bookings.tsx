@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   },
   tabBadgeText: { ...Typography.micro, color: Colors.textMuted },
 
-  list: { paddingHorizontal: Spacing.md },
+  list: { paddingHorizontal: Spacing.md, paddingBottom: 28 },
 
   emptyBox: {
     alignItems: 'center',
